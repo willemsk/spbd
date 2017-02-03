@@ -94,5 +94,7 @@
   </Settings>
   <VirtualDirectory Name="src">
     <File Name="main.cpp"/>
+    <File Name="langevin.h"/>
+    <File Name="langevin.cpp"/>
   </VirtualDirectory>
 </CodeLite_Project>
