@@ -12,7 +12,7 @@
  * @attention
  * @verbatim
  * 
- * SPBD -- Single Protein Bownian Dynamics
+ * SPBD -- Single Protein Brownian Dynamics
  * 
  *  Kherim Willems (kherim@kher.im)
  * 

@@ -13,7 +13,7 @@ int main(
     /* Instructions */
     char header[] = {"\n\n\
 ----------------------------------------------------------------------\n\
-    SPBD -- Single Protein Bownian Dynamics\n\
+    SPBD -- Single Protein Brownian Dynamics\n\
     \n\
     Kherim Willems (kherim@kher.im)\n\
     \n"};
@@ -34,7 +34,7 @@ int main(
     //std::cout << usage;
     
     bool debug = false;
-    std::string conf_file("test_conf.txt");
+    std::string conf_file("test/test_conf.txt");
     
     // Create new simulation object
     langevin_simulation simulation;
@@ -45,23 +45,22 @@ int main(
     
     if (debug)
     {
-    std::cout << "done" << std::endl;
+    std::cout << "done.\n";
     printConfiguration(simulation.conf);
     }
     
-    std::cout << "Reserving memory space...";
+    std::cout << "Reserving memory space... ";
     unsigned long long output_elements =
         int((simulation.conf.steps/simulation.conf.saveFreq)+1);
     simulation.out.positionVector.reserve(output_elements);
     simulation.out.timeVector.reserve(output_elements);
-    std::cout << "done" << std::endl;
+    std::cout << "done.\n";
     
-    std::cout << "Starting the simulation...\n";
     computeLangevinTrajectory(simulation);
     
     std::cout << "Writing data to disk (" << simulation.conf.trajectoryOutputFile <<")... ";
     writeSimulationResultsToFile(simulation);
-    std::cout << "done" << std::endl;
+    std::cout << "done.\n";
 
     return 0;
 }

@@ -13,7 +13,7 @@ CurrentFileName        :=
 CurrentFilePath        :=
 CurrentFileFullPath    :=
 User                   :=willemsk
-Date                   :=06/02/17
+Date                   :=09/02/17
 CodeLitePath           :=/home/willemsk/.codelite
 LinkerName             :=/usr/bin/g++
 SharedObjectLinkerName :=/usr/bin/g++ -shared -fPIC
@@ -50,8 +50,8 @@ LibPath                := $(LibraryPathSwitch).
 AR       := /usr/bin/ar rcu
 CXX      := /usr/bin/g++
 CC       := /usr/bin/gcc
-CXXFLAGS :=  -g -O1 -Wall -std=gnu++11 $(Preprocessors)
-CFLAGS   :=  -g -O1 -Wall $(Preprocessors)
+CXXFLAGS :=  -g -O2 -Wall -std=c++11 $(Preprocessors)
+CFLAGS   :=  -g -O2 -Wall -std=c++11 $(Preprocessors)
 ASFLAGS  := 
 AS       := /usr/bin/as
 
@@ -60,7 +60,7 @@ AS       := /usr/bin/as
 ## User defined environment variables
 ##
 CodeLiteDir:=/usr/share/codelite
-Objects0=$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IntermediateDirectory)/langevin.cpp$(ObjectSuffix) 
+Objects0=$(IntermediateDirectory)/fileio.cpp$(ObjectSuffix) $(IntermediateDirectory)/langevin.cpp$(ObjectSuffix) $(IntermediateDirectory)/main.cpp$(ObjectSuffix) 
 
 
 
@@ -91,13 +91,13 @@ PreBuild:
 ##
 ## Objects
 ##
-$(IntermediateDirectory)/main.cpp$(ObjectSuffix): main.cpp $(IntermediateDirectory)/main.cpp$(DependSuffix)
-	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/willemsk/googledrive/git_projects/spbd/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IncludePath)
-$(IntermediateDirectory)/main.cpp$(DependSuffix): main.cpp
-	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/main.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/main.cpp$(DependSuffix) -MM main.cpp
+$(IntermediateDirectory)/fileio.cpp$(ObjectSuffix): fileio.cpp $(IntermediateDirectory)/fileio.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/willemsk/googledrive/git_projects/spbd/fileio.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/fileio.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/fileio.cpp$(DependSuffix): fileio.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/fileio.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/fileio.cpp$(DependSuffix) -MM fileio.cpp
 
-$(IntermediateDirectory)/main.cpp$(PreprocessSuffix): main.cpp
-	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main.cpp$(PreprocessSuffix) main.cpp
+$(IntermediateDirectory)/fileio.cpp$(PreprocessSuffix): fileio.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/fileio.cpp$(PreprocessSuffix) fileio.cpp
 
 $(IntermediateDirectory)/langevin.cpp$(ObjectSuffix): langevin.cpp $(IntermediateDirectory)/langevin.cpp$(DependSuffix)
 	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/willemsk/googledrive/git_projects/spbd/langevin.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/langevin.cpp$(ObjectSuffix) $(IncludePath)
@@ -106,6 +106,14 @@ $(IntermediateDirectory)/langevin.cpp$(DependSuffix): langevin.cpp
 
 $(IntermediateDirectory)/langevin.cpp$(PreprocessSuffix): langevin.cpp
 	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/langevin.cpp$(PreprocessSuffix) langevin.cpp
+
+$(IntermediateDirectory)/main.cpp$(ObjectSuffix): main.cpp $(IntermediateDirectory)/main.cpp$(DependSuffix)
+	$(CXX) $(IncludePCH) $(SourceSwitch) "/home/willemsk/googledrive/git_projects/spbd/main.cpp" $(CXXFLAGS) $(ObjectSwitch)$(IntermediateDirectory)/main.cpp$(ObjectSuffix) $(IncludePath)
+$(IntermediateDirectory)/main.cpp$(DependSuffix): main.cpp
+	@$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) -MG -MP -MT$(IntermediateDirectory)/main.cpp$(ObjectSuffix) -MF$(IntermediateDirectory)/main.cpp$(DependSuffix) -MM main.cpp
+
+$(IntermediateDirectory)/main.cpp$(PreprocessSuffix): main.cpp
+	$(CXX) $(CXXFLAGS) $(IncludePCH) $(IncludePath) $(PreprocessOnlySwitch) $(OutputSwitch) $(IntermediateDirectory)/main.cpp$(PreprocessSuffix) main.cpp
 
 
 -include $(IntermediateDirectory)/*$(DependSuffix)

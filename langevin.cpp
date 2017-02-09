@@ -8,7 +8,7 @@
  * @attention
  * @verbatim
  * 
- * SPBD -- Single Protein Bownian Dynamics
+ * SPBD -- Single Protein Brownian Dynamics
  * 
  *  Kherim Willems (kherim@kher.im)
  * 
@@ -51,17 +51,17 @@ int computeLangevinTrajectory(
     const int method
     )
 {   
-    std::cout << "Initializing...\n";
+    std::cout << "Initializing simulation.\n";
     
     /* Check sanity of arguments */
-    std::cout << "  Checking arguments...";
+    std::cout << "  Checking arguments... ";
     
     // size of positionVector, timeVector == int_round_down(steps/saveFreq)+1
     // size of forceVector == dampingVector
     // size of positionVector == timeVector
     // spacingVector[0] <= positionStart <= spaceVector[end]
     
-    std::cout << " done.\n";
+    std::cout << "done.\n";
     
     /* Allocate memory for force vectors */
     std::vector<float> externalVector(forceVector.size());
@@ -71,7 +71,7 @@ int computeLangevinTrajectory(
     /* Populate local force vectors */
     
     // F/gamma
-    std::cout << "  External force...";
+    std::cout << "  Pre-computing external force step size... ";
     
     calcExternalStepVector( timestep,
                             damping,
@@ -79,31 +79,28 @@ int computeLangevinTrajectory(
                             dampingVector,
                             externalVector);
                             
-    std::cout << " done.\n";
+    std::cout << "done.\n";
     
     // (kB*T*Dt/gamma)^0.5
-    std::cout << "  Thermal force...";
+    std::cout << "  Pre-computing thermal force step size... ";
     calcThermalStepVector( timestep,
                            temperature,
                            damping,
                            dampingVector,
                            thermalVector);
-    std::cout << " done.\n";
+    std::cout << "done.\n";
     
     /* Initialize random gaussian distribution */
-    std::cout << "  Random distribution...";
+    std::cout << "  Pre-computing random guassian distribution... ";
     std::default_random_engine generator;
     std::normal_distribution<float> distribution(0.0,1.0);
-    std::cout << " done.\n";
+    std::cout << "done.\n";
     
     /* Set the initial position */
-    std::cout << "  Initial position...";
+    std::cout << "  Setting up initial particle position... ";
     positionVector.push_back(positionStart);
     timeVector.push_back(0);
-    
-    float newPos = positionStart;
-    float oldPos = positionStart;
-    std::cout << " done.\n";
+    std::cout << "done.\n";
     
     /*
     std::cout << "Printing step vectors:\n";
@@ -113,6 +110,9 @@ int computeLangevinTrajectory(
     printVector(thermalVector,',');
     */
     
+    // Allocate loop variables
+    float newPos = positionStart;
+    float oldPos = positionStart;
     unsigned long long percentFreq = steps/20;
     float minPos = 0.0;
     float maxPos = (forceVector.size()-1)*positionSpacing;
@@ -122,7 +122,8 @@ int computeLangevinTrajectory(
     int percent = 0;
 
     /* Perform steps */
-    std::cout << "Running simulation..." << std::endl;
+    std::cout << "Running simulation for " << steps << " steps.\n";
+    std::cout << "   0%.." << std::flush;
     for (unsigned long long s = 1; s != steps+1; s++) {
 
         
@@ -135,18 +136,12 @@ int computeLangevinTrajectory(
             index = long(oldPos/positionSpacing);
         }        
         
-        //std::cout << "Index: " << index << std::endl;
-        
         // Grab external force at this position
         eForceStep = externalVector[index];
-        //std::cout << "eForceStep: " << eForceStep << std::endl;
         // Grab thermal force at this position
         tForceStep = thermalVector[index]*distribution(generator);
-        //std::cout << "tForceStep: " << tForceStep << std::endl;
-        
         // Calculate new position
         newPos = oldPos + eForceStep + tForceStep;
-        //std::cout << "newPos: " << newPos << std::endl;
         
         // Save position and timestamp if needed
         if (s % saveFreq == 0) {
@@ -156,13 +151,12 @@ int computeLangevinTrajectory(
         if (s % percentFreq == 0) {
             
             percent = (float)(s)/(float)(steps)*100;
-            std::cout << "  " << percent << "% completed." << std::endl;
+            std::cout << percent << "%.." << std::flush;
         }
-        
         // Overwrite oldPos for next iteration
         oldPos = newPos;
-        
     }
+    std::cout << ". done.\n" << std::endl;
     /* Cleanup */
     
     return 0;
@@ -185,7 +179,6 @@ int calcExternalStepVector(
         externalV = (forceV*timestep)/(damping*dampingV);
         externalVector[i] = externalV;
     }
-    
     return 0;
 }
 
@@ -338,7 +331,6 @@ int loadConfiguration(
         
     
     }
-    
     return 0;
 }
 
