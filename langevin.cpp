@@ -15,22 +15,44 @@
  * @endverbatim
  */
 #include "langevin.h"
+#include "fileio.h"
 
 int computeLangevinTrajectory(
-    unsigned long long steps,
-    unsigned long long saveFreq,
-    float timestep,
-    float temperature,
-    float positionStart,
-    float positionSpacing,
+    langevin_simulation &simu
+    )
+{
+    return computeLangevinTrajectory(
+        simu.conf.steps,
+        simu.conf.saveFreq,
+        simu.conf.timestep,
+        simu.conf.temperature,
+        simu.conf.damping,
+        simu.conf.positionStart,
+        simu.conf.positionSpacing,
+        simu.conf.forceVector,
+        simu.conf.dampingVector,
+        simu.out.positionVector,
+        simu.out.timeVector,
+        simu.conf.method);
+}
+
+int computeLangevinTrajectory(
+    const unsigned long long steps,
+    const unsigned long long saveFreq,
+    const float timestep,
+    const float temperature,
+    const float damping,
+    const float positionStart,
+    const float positionSpacing,
     std::vector<float> const &forceVector,
     std::vector<float> const &dampingVector,
     std::vector<float> &positionVector,
-    std::vector<float> &timeVector,
-    int method
+    std::vector<unsigned long long> &timeVector,
+    const int method
     )
 {   
-    std::cout << "Initializing simulation...\n";
+    std::cout << "Initializing...\n";
+    
     /* Check sanity of arguments */
     std::cout << "  Checking arguments...";
     
@@ -52,6 +74,7 @@ int computeLangevinTrajectory(
     std::cout << "  External force...";
     
     calcExternalStepVector( timestep,
+                            damping,
                             forceVector,
                             dampingVector,
                             externalVector);
@@ -62,6 +85,7 @@ int computeLangevinTrajectory(
     std::cout << "  Thermal force...";
     calcThermalStepVector( timestep,
                            temperature,
+                           damping,
                            dampingVector,
                            thermalVector);
     std::cout << " done.\n";
@@ -81,11 +105,13 @@ int computeLangevinTrajectory(
     float oldPos = positionStart;
     std::cout << " done.\n";
     
-    std::cout << "Printing vectors:\n";
-    std::cout << "exF: ";
-    printVector(externalVector);
-    std::cout << "thF: ";
-    printVector(thermalVector);
+    /*
+    std::cout << "Printing step vectors:\n";
+    std::cout << "Damped external force stepsize per position:\n";
+    printVector(externalVector,',');
+    std::cout << "Damped thermal force stepsize per position:\n";
+    printVector(thermalVector,',');
+    */
     
     unsigned long long percentFreq = steps/20;
     float minPos = 0.0;
@@ -97,7 +123,8 @@ int computeLangevinTrajectory(
 
     /* Perform steps */
     std::cout << "Running simulation..." << std::endl;
-    for (unsigned long long s = 1; s <= steps; s++) {
+    for (unsigned long long s = 1; s != steps+1; s++) {
+
         
         // Calculate the index for this position and check for out-of-bounds
         if (oldPos < minPos) {
@@ -124,7 +151,7 @@ int computeLangevinTrajectory(
         // Save position and timestamp if needed
         if (s % saveFreq == 0) {
             positionVector.push_back(newPos);
-            timeVector.push_back(s*timestep);
+            timeVector.push_back(s);
         }
         if (s % percentFreq == 0) {
             
@@ -143,19 +170,20 @@ int computeLangevinTrajectory(
 
 int calcExternalStepVector(
     float timestep,
+    float damping,
     std::vector<float> const &forceVector,
     std::vector<float> const &dampingVector,
     std::vector<float> &externalVector)
 {
-    float force = 0;
-    float damping = 0;
-    float external = 0;
+    float forceV = 0.0;
+    float dampingV = 0.0;
+    float externalV = 0.0;
     
     for (unsigned int i = 0; i < externalVector.size(); i++) {
-        force = forceVector[i];
-        damping = dampingVector[i];
-        external = force/damping*timestep;
-        externalVector[i] = external;
+        forceV = forceVector[i];
+        dampingV = dampingVector[i];
+        externalV = (forceV*timestep)/(damping*dampingV);
+        externalVector[i] = externalV;
     }
     
     return 0;
@@ -164,26 +192,26 @@ int calcExternalStepVector(
 int calcThermalStepVector(
     float timestep,
     float temperature,
+    float damping,
     std::vector<float> const &dampingVector,
     std::vector<float> &thermalVector)
 {
-    float damping = 0.0;
-    float thermal = 0.0;
+    float dampingV = 0.0;
+    float thermalV = 0.0;
     
     for (unsigned int i = 0; i < thermalVector.size(); i++) {
-        damping = dampingVector[i];
-        thermal = std::sqrt(2*temperature*timestep/damping);
-        thermalVector[i] = thermal;
+        dampingV = dampingVector[i];
+        thermalV = std::sqrt((2*temperature*timestep)/(damping*dampingV));
+        thermalVector[i] = thermalV;
     }
-    
     return 0;
 }
 
 template <typename T>
-void printVector(std::vector<T> const &vec) {
+void printVector(std::vector<T> const &vec, char delimiter) {
     for (auto val : vec)
     {
-        std::cout << val << ", ";
+        std::cout << val << delimiter;
     }
     std::cout << std::endl;
 }
@@ -206,4 +234,133 @@ void buildForceVector(
 }
 
 
+
+int loadConfiguration(
+    std::string const &filename,
+    langevin_configuration &conf
+    )
+{
+    // Allocate variables
+    std::vector<std::string> param_value;
+    std::vector<std::string> lines;
+    
+    // Save filename to conf
+    conf.name = filename;
+    
+    // Load all lines from configuration file
+    readFileToStrings(conf.name, lines);
+    
+    // Convert all lines to configuration parameters
+    for (unsigned int i=0; i<lines.size(); i++)
+    {
+        std::string line = lines[i];
+        // Extract parameter and value from line
+        param_value = split(line, ' ');
+        const char* param = param_value[0].c_str();
+        std::string value = param_value[1];
+        
+        // Go over each of the possible parameters
+        if(std::strcmp(param, "steps") == 0)
+        {
+            conf.steps = std::stoull(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "saveFreq") == 0)
+        {
+            conf.saveFreq = std::stoull(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "timestep") == 0)
+        {
+            conf.timestep = std::stof(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "temperature") == 0)
+        {
+            conf.temperature = std::stof(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "damping") == 0)
+        {
+            conf.damping = std::stof(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "positionStart") == 0)
+        {
+            conf.positionStart = std::stof(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "positionSpacing") == 0)
+        {
+            conf.positionSpacing = std::stof(param_value[1]);
+            continue;
+        }
+        if(std::strcmp(param, "forceVector") == 0)
+        {
+            // Convert the value part to float vector 
+            std::vector<float> forceVector =
+                convertStringToFloatVector(split(value,','));
+            // Save vector in configuration
+            conf.forceVector = forceVector;
+            continue;
+        }
+        if(std::strcmp(param, "dampingVector") == 0)
+        {
+            // Convert the value part to float vector 
+            std::vector<float> dampingVector =
+                convertStringToFloatVector(split(value,','));
+            // Save vector in configuration
+            conf.dampingVector = dampingVector;
+            continue;
+        }
+        if(std::strcmp(param, "method") == 0)
+        {
+            int method = 0;
+            const char* val = param_value[1].c_str();
+            
+            if (std::strcmp(val, "first") == 0)
+            {
+                method = 1;
+            }
+            if (std::strcmp(val, "second") == 0)
+            {
+                method = 2;
+            }
+            
+            conf.method = method;
+            continue;
+        }
+        if(std::strcmp(param, "trajectoryOutputFile") == 0)
+        {
+            conf.trajectoryOutputFile = param_value[1];
+            continue;
+        }
+        
+    
+    }
+    
+    return 0;
+}
+
+void printConfiguration(
+    langevin_configuration conf
+    )
+{
+    std::cout << "Configuration file parameters:\n";
+    std::cout << "                     name: " << conf.name                 << "\n";
+    std::cout << "                    steps: " << conf.steps                << "\n";
+    std::cout << "                 saveFreq: " << conf.saveFreq             << "\n";
+    std::cout << "                 timestep: " << conf.timestep             << "\n";
+    std::cout << "              temperature: " << conf.temperature          << "\n";
+    std::cout << "                  damping: " << conf.damping              << "\n";
+    std::cout << "            positionStart: " << conf.positionStart        << "\n";
+    std::cout << "          positionSpacing: " << conf.positionSpacing      << "\n";
+    std::cout << "                   method: " << conf.method               << "\n";
+    std::cout << "     trajectoryOutputFile: " << conf.trajectoryOutputFile << "\n";
+    std::cout << "              forceVector:\n";
+    printVector(conf.forceVector, ',');
+    std::cout << "            dampingVector:\n";
+    printVector(conf.dampingVector, ',');
+    std::cout << std::endl;
+}
     
